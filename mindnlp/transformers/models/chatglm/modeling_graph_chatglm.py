@@ -93,7 +93,7 @@ class PrefixEncoder(nn.Module):
         if self.prefix_projection:
             # Use a two-layer MLP to encode the prefix
             self.embedding = nn.Embedding(config.pre_seq_len, config.hidden_size)
-            self.trans = nn.SequentialCell(
+            self.trans = nn.Sequential(
                 nn.Linear(config.hidden_size, config.hidden_size),
                 nn.Tanh(),
                 nn.Linear(config.hidden_size, config.num_layers * config.hidden_size * 2)
@@ -1116,7 +1116,7 @@ class MSChatGLMForConditionalGeneration(MSChatGLMPreTrainedModel):
         """
         # update past_key_values
         model_kwargs["past_key_values"] = self._extract_past_from_model_output(
-            outputs, standardize_cache_format=standardize_cache_format
+            outputs
         )
 
         # update attention mask

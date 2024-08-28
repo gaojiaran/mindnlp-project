@@ -26,7 +26,7 @@ from mindspore import ops
 from mindnlp.transformers import XCLIPConfig, XCLIPTextConfig, XCLIPVisionConfig
 from mindnlp.utils.testing_utils import require_mindspore, require_vision, slow
 from mindnlp.utils import is_mindspore_available, is_vision_available
-from mindnlp.utils.serialization import safe_load_file, safe_save_file
+from mindnlp.core.serialization import safe_load_file, safe_save_file
 
 from ...test_configuration_common import ConfigTester
 from ...test_modeling_common import ModelTesterMixin, _config_zero_init, floats_tensor, ids_tensor, random_attention_mask
@@ -159,7 +159,7 @@ class XCLIPVisionModelTest(ModelTesterMixin, unittest.TestCase):
     def test_inputs_embeds(self):
         pass
 
-    def test_model_common_attributes(self):
+    def test_model_get_set_embeddings(self):
         config, _ = self.model_tester.prepare_config_and_inputs_for_common()
 
         for model_class in self.all_model_classes:
@@ -540,7 +540,7 @@ class XCLIPModelTest(ModelTesterMixin, unittest.TestCase):
         pass
 
     @unittest.skip(reason="XCLIPModel does not have input/output embeddings")
-    def test_model_common_attributes(self):
+    def test_model_get_set_embeddings(self):
         pass
 
     @unittest.skip(reason="XCLIPModel does not support feedforward chunking")

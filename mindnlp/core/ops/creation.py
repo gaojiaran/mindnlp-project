@@ -5,6 +5,7 @@ from mindspore._c_expression import Tensor as CTensor # pylint: disable=no-name-
 from mindspore import ops
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindnlp.configs import USE_PYBOOST
+from ..utils import get_default_dtype
 
 def as_strided(self, size, stride, storage_offset=None):
     if len(size) != len(stride):
@@ -32,16 +33,18 @@ def from_numpy(ndarray):
 # zeros
 _zeros = ops.Zeros()
 def zeros(*size, dtype=None):
+    if dtype is None:
+        dtype = get_default_dtype()
     if isinstance(size[0], (tuple, list)):
         size = size[0]
     if USE_PYBOOST:
         return mindspore.mint.zeros(size, dtype=dtype)
-    if dtype is None:
-        dtype = mindspore.float32
     return _zeros(size, dtype)
 
 # zeros_like
 def zeros_like(input, *, dtype=None):
+    if dtype is None:
+        dtype = input.dtype
     if USE_PYBOOST:
         return mindspore.mint.zeros_like(input, dtype=dtype)
     return ops.zeros_like(input, dtype=dtype)
@@ -51,14 +54,16 @@ _ones = ops.Ones()
 def ones(*size, dtype=None):
     if isinstance(size[0], (tuple, list)):
         size = size[0]
+    if dtype is None:
+        dtype = get_default_dtype()
     if USE_PYBOOST:
         return mindspore.mint.ones(size, dtype=dtype)
-    if dtype is None:
-        dtype = mindspore.float32
     return _ones(size, dtype)
 
 # ones_like
 def ones_like(input, *, dtype=None):
+    if dtype is None:
+        dtype = input.dtype
     if USE_PYBOOST:
         return mindspore.mint.ones_like(input, dtype=dtype)
     return ops.ones_like(input, dtype=dtype)
@@ -93,9 +98,12 @@ def eye(n, m=None, *, dtype=None):
 
 # empty
 def empty(*size, dtype=None):
+    if isinstance(size[0], (tuple, list)):
+        size = size[0]
     if dtype is None:
-        dtype = mindspore.float32
-    return CTensor(dtype, size)
+        dtype = get_default_dtype()
+    out = CTensor(dtype, size)
+    return mindspore.Tensor(out)
 
 # empty_like
 
@@ -111,6 +119,8 @@ def full(size, fill_value, *, dtype=None):
 
 # full_like
 def full_like(input, fill_value, *, dtype=None):
+    if dtype is None:
+        dtype = input.dtype
     return full(input.shape, fill_value, dtype=dtype)
 
 # quantize_per_tensor

@@ -49,9 +49,16 @@ def isfinite(input):
     return ops.isfinite(input)
 
 # isin
+def isin(elements, test_elements):
+    elements = elements.asnumpy()
+    test_elements = test_elements.asnumpy()
+    mask = np.in1d(elements, test_elements).reshape(elements.shape)
+    return mindspore.tensor(mask)
 
 # isinf
 def isinf(input):
+    if input.dtype in (mindspore.int32, mindspore.int64):
+        input = input.to(mindspore.float32)
     return ops.isinf(input)
 
 # isposinf
@@ -60,6 +67,8 @@ def isinf(input):
 
 # isnan
 def isnan(input):
+    if input.dtype in (mindspore.int32, mindspore.int64):
+        input = input.to(mindspore.float32)
     return ops.isnan(input)
 
 # isreal

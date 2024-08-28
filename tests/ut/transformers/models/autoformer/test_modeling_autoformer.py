@@ -223,7 +223,7 @@ class AutoformerModelTest(ModelTesterMixin, unittest.TestCase):
     test_missing_keys = False
     test_torchscript = False
     test_inputs_embeds = False
-    test_model_common_attributes = False
+    test_model_get_set_embeddings = False
 
     def setUp(self):
         self.model_tester = AutoformerModelTester(self)
@@ -248,6 +248,10 @@ class AutoformerModelTest(ModelTesterMixin, unittest.TestCase):
         config_and_inputs = self.model_tester.prepare_config_and_inputs_for_common()
         self.model_tester.check_encoder_decoder_model_standalone(
             *config_and_inputs)
+
+    @unittest.skip(reason="Model does not have input embeddings")
+    def test_model_get_set_embeddings(self):
+        pass
 
     @unittest.skip(reason="Model has no tokens embeddings")
     def test_resize_tokens_embeddings(self):

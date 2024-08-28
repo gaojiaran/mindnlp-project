@@ -122,7 +122,7 @@ class PrefixEncoder(nn.Module):
         if self.prefix_projection:
             # Use a two-layer MLP to encode the prefix
             self.embedding = nn.Embedding(config.pre_seq_len, config.hidden_size)
-            self.trans = nn.SequentialCell(
+            self.trans = nn.Sequential(
                 nn.Linear(config.hidden_size, config.hidden_size),
                 nn.Tanh(),
                 nn.Linear(config.hidden_size, config.num_layers * config.hidden_size * 2)
@@ -171,7 +171,7 @@ def gelu(x):
     Raises:
         None.
     """
-    return ops.gelu(x, approximate='tanh')
+    return F.gelu(x, approximate='tanh')
 
 
 class RotaryEmbedding(nn.Module):
@@ -705,7 +705,7 @@ class GEGLU(nn.Module):
             None.
         """
         super().__init__()
-        self.activation_fn = ops.gelu
+        self.activation_fn = F.gelu
 
     def forward(self, x):
         """
@@ -1482,7 +1482,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
         """
         # update past_key_values
         model_kwargs["past_key_values"] = self._extract_past_from_model_output(
-            outputs, standardize_cache_format=standardize_cache_format
+            outputs
         )
 
         # update attention mask

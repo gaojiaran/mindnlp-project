@@ -169,7 +169,7 @@ class PrefixEncoder(nn.Module):
             # Use a two-layer MLP to encode the prefix
             kv_size = config.num_layers * config.kv_channels * config.multi_query_group_num * 2
             self.embedding = nn.Embedding(config.pre_seq_len, kv_size)
-            self.trans = nn.SequentialCell([
+            self.trans = nn.Sequential([
                 nn.Linear(kv_size, config.hidden_size),
                 nn.Tanh(),
                 nn.Linear(config.hidden_size, kv_size)
@@ -1513,7 +1513,7 @@ class ChatGLM2ForConditionalGeneration(ChatGLM2PreTrainedModel):
         '''
         # update past_key_values
         model_kwargs["past_key_values"] = self._extract_past_from_model_output(
-            outputs, standardize_cache_format=standardize_cache_format
+            outputs
         )
 
         # update attention mask
@@ -1914,7 +1914,7 @@ class ChatGLM2ForConditionalGeneration(ChatGLM2PreTrainedModel):
 
         Raises:
             UserWarning: If using `max_length`'s default value to control generation length.
-                This behavior is deprecated and will be removed in v5 of Transformers.
+                This behavior is deprecated.
                 It is recommended to use `max_new_tokens` instead.
             UserWarning: If both `max_new_tokens` and `max_length` are set. `max_new_tokens` takes precedence.
             UserWarning: If the input length exceeds `max_length` and may lead to unexpected behavior.

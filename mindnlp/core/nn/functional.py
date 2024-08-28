@@ -8,7 +8,7 @@ from mindspore import ops, Tensor
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops.function.random_func import _get_seed, _set_prim_op_user_data
 
-from mindnlp.configs import USE_PYBOOST
+from mindnlp.configs import USE_PYBOOST, DEVICE_TARGET
 from .modules._utils import _pair
 
 def gelu(input, approximate='none'):
@@ -34,6 +34,8 @@ def sigmoid(input):
 def silu(input):
     if USE_PYBOOST:
         return mindspore.mint.nn.functional.silu(input)
+    if DEVICE_TARGET == 'CPU':
+        return input * sigmoid(input)
     return ops.silu(input)
 
 def mish(input):
@@ -54,6 +56,9 @@ def softplus(input, beta=1, threshold=20):
     if USE_PYBOOST:
         return mindspore.mint.nn.functional.softplus(input, beta, threshold)
     return ops.softplus(input, beta, threshold)
+
+def logsigmoid(input):
+    return ops.logsigmoid(input)
 
 def leaky_relu(input, alpha=0.2):
     if USE_PYBOOST:
@@ -172,8 +177,11 @@ def binary_cross_entropy_with_logits(input, target, weight=None, reduction='mean
         return mindspore.mint.nn.functional.binary_cross_entropy_with_logits(input, target, weight, reduction, pos_weight)
     return ops.binary_cross_entropy_with_logits(input, target, weight, pos_weight, reduction)
 
-def log_softmax(input, dim=-1):
-    return ops.log_softmax(input, dim)
+def log_softmax(input, dim=-1, dtype=None):
+    out = ops.log_softmax(input, dim)
+    if dtype is not None:
+        out = out.to(dtype)
+    return out
 
 def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, scale_grad_by_freq=False):
     if USE_PYBOOST:
@@ -191,7 +199,14 @@ def apply_rotary_pos_emb(query, key, cos, sin, position_ids, cos_format=0):
 def pad(input, pad, mode='constant', value=0.0):
     if USE_PYBOOST:
         return mindspore.mint.nn.functional.pad(input, pad, mode, value)
+    if mode in ['reflect', 'circular']:
+        return ops.pad(input, pad, mode)
     return ops.pad(input, pad, mode, value)
+
+def nll_loss(input, target, weight=None, ignore_index=-100, reduction='mean', label_smoothing=0.0):
+    # _nll_loss = _get_cache_prim(ops.NLLLoss)(reduction, ignore_index)
+    # return _nll_loss(input, target, weight)
+    return ops.nll_loss(input, target, weight, ignore_index, reduction, label_smoothing)
 
 def cross_entropy(input, target, weight=None, ignore_index=-100, reduction='mean', label_smoothing=0.0):
     return ops.cross_entropy(input, target, weight, ignore_index, reduction, label_smoothing)
@@ -205,12 +220,22 @@ def l1_loss(input, target, reduction='mean'):
 def softmax(input, dim=-1, *, dtype=None):
     if USE_PYBOOST:
         return mindspore.mint.softmax(input, dim, dtype=dtype)
+    if dim is None:
+        dim = -1
     return ops.softmax(input, dim, dtype=dtype)
 
 def layer_norm(input, normalized_shape, weight=None, bias=None, eps=1e-5):
+    if weight is None:
+        weight = ops.ones(normalized_shape, dtype=input.dtype)
+    if bias is None:
+        bias = ops.zeros(normalized_shape, dtype=input.dtype)
     if USE_PYBOOST:
         return mindspore.mint.layer_norm(input, normalized_shape, weight, bias, eps)
-    _layer_norm = _get_cache_prim(ops.LayerNorm)(-1, -1, epsilon=eps)
+    if weight is not None:
+        begin_axis = input.ndim - weight.ndim
+    else:
+        begin_axis = -1
+    _layer_norm = _get_cache_prim(ops.LayerNorm)(begin_axis, begin_axis, epsilon=eps)
     return _layer_norm(input, weight, bias)[0]
 
 def interpolate(input, size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None, antialias=False):
@@ -924,7 +949,13 @@ def grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corner
     return ops.grid_sample(input, grid, mode, padding_mode, align_corners)
 
 def cosine_similarity(x1, x2, dim=1, eps=1e-8):
-    return ops.cosine_similarity(x1, x2, dim, eps)
+    if DEVICE_TARGET == 'Ascend':
+        zero_norm_mask = ((x1.sum(dim) == 0).int() & (x2.sum(dim) == 0).int()).bool()
+    else:
+        zero_norm_mask = (x1.sum(dim) == 0) & (x2.sum(dim) == 0)
+
+    cosine_sim = ops.cosine_similarity(x1, x2, dim, eps)
+    return ops.select(zero_norm_mask, ops.ones_like(cosine_sim), cosine_sim)
 
 # def pairwise_distance():
 #     return ops.pairwise_distance
